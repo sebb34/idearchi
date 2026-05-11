@@ -1090,8 +1090,10 @@ async function generateImage(prompt, refB64s) {
 
 // ─── RENDER RESULTS ───────────────────────────────────────────────────────
 function renderResults(name, brief, styles, votes, recId) {
-  document.getElementById('r-name').textContent = name;
-  document.getElementById('r-brief').textContent = brief.slice(0,130) + (brief.length>130?'…':'');
+  const safeName  = name  || '—';
+  const safeBrief = brief || '';
+  document.getElementById('r-name').textContent  = safeName;
+  document.getElementById('r-brief').textContent = safeBrief.slice(0,130) + (safeBrief.length>130?'…':'');
 
   window._currentRecord = { recId, votes: [...votes], styles };
 
@@ -1263,7 +1265,7 @@ async function openProject(recId) {
     });
     const votes = [+(f[F.VOTES1]||0), +(f[F.VOTES2]||0), +(f[F.VOTES3]||0)];
     hideLoader();
-    renderResults(f[F.NOM], f[F.BRIEF], styles, votes, recId);
+    renderResults(f[F.NOM] || '—', f[F.BRIEF] || '', styles, votes, recId);
   } catch(e) {
     hideLoader();
     alert('Erreur chargement : ' + e.message);
