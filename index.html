@@ -369,12 +369,12 @@ Ex : Salon de 28m², appartement haussmannien, plafond 3m. Je veux casser le cô
     </div>
 
     <div class="form-group">
-      <label>Documents (facultatif)</label>
+      <label>Photos de l'espace (facultatif, max 3)</label>
       <div class="drop-zone" id="drop-zone">
         <input type="file" id="file-input" multiple accept="image/*,.pdf" onchange="onFiles(this.files)">
         <div class="drop-icon">⬆</div>
-        <p><strong>Glissez vos fichiers</strong> ou cliquez pour sélectionner</p>
-        <p style="font-size:11px;margin-top:3px;color:var(--stone)">JPG · PNG · PDF — max 10 Mo / fichier</p>
+        <p><strong>Glissez vos photos</strong> ou cliquez pour sélectionner</p>
+        <p style="font-size:11px;margin-top:3px;color:var(--stone)">JPG · PNG — jusqu'à 3 photos de référence ; les visuels générés respecteront leur structure</p>
       </div>
       <div class="files-list" id="files-list"></div>
     </div>
@@ -527,17 +527,75 @@ function checkDemoBanner() {
 // ═══════════════════════════════════════════════════════════════════════════
 //  FILES
 // ═══════════════════════════════════════════════════════════════════════════
-let uploadedFiles = [];
+let uploadedFiles = []; // { name, isImage, b64, mediaType, dataUrl }
 
-function onFiles(files) {
-  [...files].forEach(f => { if (!uploadedFiles.find(u => u.name === f.name)) uploadedFiles.push(f); });
+const MAX_REF_IMAGES = 3;
+const MAX_IMAGE_SIDE = 1024;
+const JPEG_QUALITY = 0.85;
+
+async function processImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width: w, height: h } = img;
+        if (w > MAX_IMAGE_SIDE || h > MAX_IMAGE_SIDE) {
+          if (w >= h) { h = Math.round(h * MAX_IMAGE_SIDE / w); w = MAX_IMAGE_SIDE; }
+          else        { w = Math.round(w * MAX_IMAGE_SIDE / h); h = MAX_IMAGE_SIDE; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+        resolve({
+          name: file.name,
+          isImage: true,
+          mediaType: 'image/jpeg',
+          dataUrl,
+          b64: dataUrl.split(',')[1],
+        });
+      };
+      img.onerror = () => reject(new Error('Image illisible : ' + file.name));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Lecture impossible : ' + file.name));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function onFiles(files) {
+  const imageCount = uploadedFiles.filter(u => u.isImage).length;
+  let remaining = MAX_REF_IMAGES - imageCount;
+
+  for (const f of files) {
+    if (uploadedFiles.find(u => u.name === f.name)) continue;
+    if (f.type.startsWith('image/')) {
+      if (remaining <= 0) {
+        alert(`Max ${MAX_REF_IMAGES} images de référence. Retire-en avant d'en ajouter.`);
+        break;
+      }
+      try {
+        uploadedFiles.push(await processImageFile(f));
+        remaining--;
+      } catch (e) {
+        console.error(e);
+        alert(e.message);
+      }
+    } else {
+      uploadedFiles.push({ name: f.name, isImage: false, mediaType: f.type });
+    }
+  }
   renderFiles();
 }
+
 function removeFile(i) { uploadedFiles.splice(i, 1); renderFiles(); }
+
 function renderFiles() {
   document.getElementById('files-list').innerHTML = uploadedFiles.map((f, i) => `
-    <div class="file-chip">
-      ${f.name.length > 24 ? f.name.slice(0,22)+'…' : f.name}
+    <div class="file-chip" title="${f.name}">
+      ${f.isImage ? '🖼' : '📄'} ${f.name.length > 22 ? f.name.slice(0,20)+'…' : f.name}
       <button onclick="removeFile(${i})">×</button>
     </div>`).join('');
 }
@@ -621,30 +679,54 @@ async function realFlow(name, brief) {
   setStep('Récupération des préférences communauté…');
   const statsCtx = await fetchStatsContext();
 
-  // 2. Claude génère les concepts via proxy /api/claude
-  setStep('Claude analyse votre brief…');
-  const systemPrompt = `Tu es un architecte d'intérieur expert et créatif. 
+  const refImages = uploadedFiles.filter(f => f.isImage && f.b64);
+  const hasImages = refImages.length > 0;
+
+  // 2. Claude génère les concepts (avec vision si images uploadées)
+  setStep(hasImages ? 'Claude analyse vos photos…' : 'Claude analyse votre brief…');
+
+  const systemPrompt = `Tu es un architecte d'intérieur expert et créatif.${hasImages ? ' L\'utilisateur a fourni des photos de son espace actuel. Examine-les attentivement : architecture, ouvertures, volumes, mobilier en place, lumière naturelle, contraintes structurelles. Tes propositions doivent rester FIDÈLES à la géométrie et à l\'agencement de la pièce ; tu modifies seulement le style, les matériaux, la palette, le mobilier et la décoration.' : ''}
 ${statsCtx ? `Contexte : la communauté Idearchi vote actuellement ainsi → ${statsCtx}. Tiens-en compte subtilement dans tes propositions.` : ''}
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks.`;
+
+  const editGuidance = hasImages
+    ? 'Instructions précises pour modifier la photo fournie en style traditionnel français : préserver l\'architecture (murs, ouvertures, volumes, fenêtres) et le cadrage ; remplacer mobilier, matériaux, palette ; détailler les changements visibles. Anglais concis < 400 mots.'
+    : 'photorealistic interior design, traditional French style, [matériaux concrets], warm lighting, 4K';
+  const editGuidance2 = hasImages
+    ? 'Instructions précises pour modifier la photo en style contemporain scandinave : préserver architecture/cadrage ; matériaux clairs (bois clair, lin, blanc cassé) ; lignes épurées. Anglais concis < 400 mots.'
+    : 'photorealistic interior design, contemporary Scandinavian style, [matériaux], natural light, 4K';
+  const editGuidance3 = hasImages
+    ? 'Instructions précises pour modifier la photo en style minimaliste moderne : préserver architecture/cadrage ; lignes nettes, matériaux nobles, palette restreinte. Anglais concis < 400 mots.'
+    : 'photorealistic interior design, minimalist modern style, [matériaux], architectural lighting, 4K';
 
   const userPrompt = `Projet : "${name}"
 Brief : ${brief}
 
-Génère 3 concepts de design d'intérieur pour ce projet. Format JSON :
+Génère 3 concepts de design d'intérieur. Format JSON :
 {
-  "trad":  { "titre": "2-4 mots poétiques", "desc": "Description 60-80 mots, matériaux concrets, ambiance, palette", "dalle": "photorealistic interior design, traditional French style, [matériaux], warm lighting, 4K" },
-  "cont":  { "titre": "...", "desc": "...", "dalle": "photorealistic interior design, contemporary Scandinavian style, [matériaux], natural light, 4K" },
-  "mod":   { "titre": "...", "desc": "...", "dalle": "photorealistic interior design, minimalist modern style, [matériaux], architectural lighting, 4K" }
+  "trad":  { "titre": "2-4 mots poétiques", "desc": "Description 60-80 mots en français, matériaux concrets, ambiance, palette", "dalle": "${editGuidance}" },
+  "cont":  { "titre": "...", "desc": "...", "dalle": "${editGuidance2}" },
+  "mod":   { "titre": "...", "desc": "...", "dalle": "${editGuidance3}" }
 }`;
+
+  const userContent = hasImages
+    ? [
+        ...refImages.map(img => ({
+          type: 'image',
+          source: { type: 'base64', media_type: img.mediaType, data: img.b64 }
+        })),
+        { type: 'text', text: userPrompt }
+      ]
+    : userPrompt;
 
   const claudeRes = await fetch('/api/claude', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
+      max_tokens: 2000,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
+      messages: [{ role: 'user', content: userContent }]
     })
   });
 
@@ -658,24 +740,26 @@ Génère 3 concepts de design d'intérieur pour ce projet. Format JSON :
     concepts = JSON.parse(clean);
   } catch { throw new Error('Réponse Claude non parseable'); }
 
-  // 3. DALL-E 3 via proxy /api/image — 3 images en parallèle
-  setStep('Génération des visuels DALL-E 3…');
+  // 3. Génération images : gpt-image-1 si refs, sinon DALL-E 3
+  setStep(hasImages ? 'Modification des images (gpt-image-1)…' : 'Génération des visuels DALL-E 3…');
+  const refB64s = hasImages ? refImages.map(i => i.b64) : null;
   const [img1, img2, img3] = await Promise.all([
-    dalle(concepts.trad.dalle),
-    dalle(concepts.cont.dalle),
-    dalle(concepts.mod.dalle),
+    generateImage(concepts.trad.dalle, refB64s),
+    generateImage(concepts.cont.dalle, refB64s),
+    generateImage(concepts.mod.dalle, refB64s),
   ]);
 
-  // 4. Sauvegarder dans Airtable avec les vrais field IDs
+  // 4. Sauvegarder dans Airtable (skip visuels data URL trop longs)
   setStep('Sauvegarde du projet…');
+  const isDataUrl = (s) => typeof s === 'string' && s.startsWith('data:');
   const payload = { fields: {
     [F.NOM]:     name,
     [F.BRIEF]:   brief,
     [F.STATUT]:  'généré',
     [F.DATE]:    new Date().toISOString(),
-    [F.VISUEL1]: img1 || '',
-    [F.VISUEL2]: img2 || '',
-    [F.VISUEL3]: img3 || '',
+    [F.VISUEL1]: isDataUrl(img1) ? '' : (img1 || ''),
+    [F.VISUEL2]: isDataUrl(img2) ? '' : (img2 || ''),
+    [F.VISUEL3]: isDataUrl(img3) ? '' : (img3 || ''),
     [F.STYLE1]:  JSON.stringify(concepts.trad),
     [F.STYLE2]:  JSON.stringify(concepts.cont),
     [F.STYLE3]:  JSON.stringify(concepts.mod),
@@ -702,15 +786,24 @@ Génère 3 concepts de design d'intérieur pour ce projet. Format JSON :
   renderResults(name, brief, styleMap, [0,0,0], record.id);
 }
 
-async function dalle(prompt) {
+async function generateImage(prompt, refB64s) {
+  const body = (refB64s && refB64s.length)
+    ? { model: 'gpt-image-1', prompt, images: refB64s, n: 1, size: '1536x1024', quality: 'medium' }
+    : { model: 'dall-e-3', prompt, n: 1, size: '1792x1024', quality: 'standard' };
+
   const res = await fetch('/api/image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size: '1792x1024', quality: 'standard' })
+    body: JSON.stringify(body)
   });
   const data = await res.json();
-  if (data.error) throw new Error('DALL-E : ' + data.error.message);
-  return data.data?.[0]?.url || null;
+  if (data.error) throw new Error('Image API : ' + data.error.message);
+
+  const item = data.data?.[0];
+  if (!item) return null;
+  if (item.b64_json) return 'data:image/png;base64,' + item.b64_json;
+  if (item.url) return item.url;
+  return null;
 }
 
 // ─── RENDER RESULTS ───────────────────────────────────────────────────────
