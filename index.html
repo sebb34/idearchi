@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Idearchi — Design d'intérieur par IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream:        #F5F0E8;
+    --ink:          #1A1714;
+    --stone:        #8C8579;
+    --accent:       #C4A882;
+    --accent-dark:  #A08660;
+    --border:       rgba(26,23,20,0.11);
+    --card:         #FDFAF4;
+    --serif:        'Playfair Display', Georgia, serif;
+    --sans:         'DM Sans', system-ui, sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── NAV ─────────────────────────────────────────── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 40px;
+  }
+  .logo {
+    font-family: var(--serif); font-size: 22px;
+    font-style: italic; font-weight: 400;
+    letter-spacing: -0.3px; color: var(--ink);
+  }
+  .logo em { color: var(--accent); font-style: italic; }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links button {
+    background: none; border: none; border-bottom: 1.5px solid transparent;
+    font-family: var(--sans); font-size: 12px; font-weight: 500;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--stone); cursor: pointer; padding: 4px 0;
+    transition: color .2s, border-color .2s;
+  }
+  .nav-links button:hover, .nav-links button.active { color: var(--ink); border-bottom-color: var(--accent); }
+  .nav-config-btn {
+    font-size: 18px !important; text-transform: none !important;
+    letter-spacing: 0 !important; padding: 2px 6px !important;
+    border-bottom: none !important; color: var(--stone) !important;
+  }
+  .nav-config-btn:hover { color: var(--accent) !important; }
+
+  /* ── PAGES ───────────────────────────────────────── */
+  .page { display: none; animation: fadeUp .35s ease both; }
+  .page.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+
+  /* ── TYPOGRAPHY ──────────────────────────────────── */
+  h1 { font-family: var(--serif); font-weight: 400; font-style: italic; }
+  h2 { font-family: var(--serif); font-weight: 400; font-style: italic; }
+
+  /* ── LOADER ──────────────────────────────────────── */
+  #loader {
+    display: none; position: fixed; inset: 0; z-index: 500;
+    background: rgba(245,240,232,.94); backdrop-filter: blur(4px);
+    flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  }
+  #loader.active { display: flex; }
+  .loader-ring {
+    width: 44px; height: 44px;
+    border: 1.5px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .85s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-title { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--stone); }
+  .loader-step   { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+
+  /* ── FORMS ───────────────────────────────────────── */
+  .section { padding: 40px; max-width: 720px; }
+  .tag { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-bottom: 14px; }
+
+  .form-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 2px; padding: 32px;
+    max-width: 680px; margin: 0 40px 40px;
+  }
+  .form-group { margin-bottom: 24px; }
+  label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+  .hint { font-size: 12px; color: var(--stone); margin-top: 5px; }
+
+  input[type="text"], textarea {
+    width: 100%;
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: 2px; padding: 11px 14px;
+    font-family: var(--sans); font-size: 14px; color: var(--ink);
+    outline: none; transition: border-color .2s;
+  }
+  input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder, textarea::placeholder { color: var(--stone); }
+  textarea { resize: vertical; min-height: 110px; }
+
+  .drop-zone {
+    border: 1.5px dashed rgba(196,168,130,.5);
+    border-radius: 2px; padding: 28px 24px; text-align: center;
+    cursor: pointer; position: relative;
+    background: rgba(196,168,130,.03);
+    transition: background .2s, border-color .2s;
+  }
+  .drop-zone:hover, .drop-zone.dragover { background: rgba(196,168,130,.08); border-color: var(--accent); }
+  .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-icon { font-size: 26px; margin-bottom: 6px; opacity: .35; }
+  .drop-zone p { font-size: 13px; color: var(--stone); }
+  .drop-zone strong { color: var(--accent); }
+
+  .files-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .file-chip {
+    background: var(--ink); color: var(--cream);
+    font-size: 11px; padding: 4px 10px; border-radius: 2px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .file-chip button { background: none; border: none; color: var(--cream); font-size: 15px; cursor: pointer; opacity: .55; line-height: 1; padding: 0; }
+  .file-chip button:hover { opacity: 1; }
+
+  /* ── BUTTONS ─────────────────────────────────────── */
+  .btn { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border-radius: 2px; transition: .18s; }
+  .btn-primary {
+    background: var(--ink); color: var(--cream); border: none;
+    padding: 13px 26px; font-family: var(--sans); font-size: 12px;
+    font-weight: 500; letter-spacing: .07em; text-transform: uppercase;
+  }
+  .btn-primary:hover { background: #2e2925; }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-outline {
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--border); padding: 10px 20px;
+    font-family: var(--sans); font-size: 12px; font-weight: 500;
+    letter-spacing: .05em; text-transform: uppercase;
+  }
+  .btn-outline:hover { border-color: var(--ink); background: rgba(26,23,20,.04); }
+  .btn-ghost { background: none; border: none; font-family: var(--sans); color: var(--stone); font-size: 13px; cursor: pointer; padding: 4px 0; }
+  .btn-ghost:hover { color: var(--ink); }
+
+  /* ── ALERTS ──────────────────────────────────────── */
+  .alert {
+    border-radius: 2px; padding: 14px 18px;
+    font-size: 13px; display: flex; gap: 10px;
+    align-items: flex-start; margin-bottom: 20px;
+  }
+  .alert-warn { background: rgba(196,168,130,.1); border: 1px solid rgba(196,168,130,.3); color: var(--stone); }
+  .alert-error { background: rgba(180,50,40,.05); border: 1px solid rgba(180,50,40,.2); color: #a33; }
+  .alert-success { background: rgba(40,130,80,.05); border: 1px solid rgba(40,130,80,.2); color: #286050; }
+
+  /* ── CONFIG MODAL ────────────────────────────────── */
+  #config-modal {
+    display: none; position: fixed; inset: 0; z-index: 400;
+    background: rgba(26,23,20,.5); align-items: center; justify-content: center;
+  }
+  #config-modal.active { display: flex; }
+  .modal-card {
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: 2px; padding: 36px; width: 480px; max-width: 95vw;
+    position: relative;
+  }
+  .modal-close { position: absolute; top: 16px; right: 16px; }
+  .modal-card h3 { font-family: var(--serif); font-style: italic; font-size: 22px; font-weight: 400; margin-bottom: 6px; }
+  .modal-card .sub { font-size: 13px; color: var(--stone); margin-bottom: 24px; }
+  .modal-card label { font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--stone); margin-bottom: 6px; }
+  .modal-card input { margin-bottom: 16px; }
+  .config-status { font-size: 12px; padding: 8px 12px; border-radius: 2px; margin-top: 4px; }
+  .config-ok   { background: rgba(40,130,80,.08); color: #286050; }
+  .config-fail { background: rgba(180,50,40,.06); color: #a33; }
+
+  /* ── RESULTS ─────────────────────────────────────── */
+  .results-header {
+    padding: 36px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-end; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .results-header h2 { font-size: 34px; }
+  .brief-snip { font-size: 13px; color: var(--stone); max-width: 360px; font-style: italic; }
+
+  .proposals-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1px; background: var(--border);
+  }
+  .proposal-card { background: var(--card); position: relative; transition: box-shadow .2s; }
+  .proposal-card:hover { z-index: 2; box-shadow: 0 6px 28px rgba(26,23,20,.1); }
+
+  .proposal-img-wrap { position: relative; }
+  .proposal-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  .proposal-placeholder {
+    width: 100%; aspect-ratio: 4/3;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; color: var(--stone);
+  }
+  .proposal-placeholder.trad  { background: #e8dcc8; }
+  .proposal-placeholder.cont  { background: #d8d2cc; }
+  .proposal-placeholder.mod   { background: #e0e0e0; }
+
+  .winner-badge {
+    position: absolute; top: 12px; left: 12px;
+    background: var(--accent); color: var(--ink);
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    font-weight: 500; padding: 4px 10px; border-radius: 2px;
+  }
+
+  .proposal-body { padding: 20px; }
+  .style-tag { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
+  .proposal-body h3 { font-family: var(--serif); font-size: 18px; font-weight: 400; font-style: italic; line-height: 1.3; margin-bottom: 8px; }
+  .proposal-body p { font-size: 12.5px; color: var(--stone); line-height: 1.65; margin-bottom: 16px; }
+
+  .vote-row { display: flex; align-items: center; justify-content: space-between; }
+  .vote-count { font-size: 12px; color: var(--stone); }
+  .vote-count strong { font-family: var(--serif); font-size: 22px; font-weight: 700; color: var(--ink); margin-right: 3px; }
+
+  .btn-vote {
+    background: var(--ink); color: var(--cream); border: none;
+    padding: 8px 16px; font-family: var(--sans); font-size: 11px;
+    font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
+    cursor: pointer; border-radius: 2px; transition: background .2s;
+  }
+  .btn-vote:hover:not(:disabled) { background: var(--accent-dark); }
+  .btn-vote.voted, .btn-vote.voted:hover { background: var(--accent); cursor: default; }
+  .btn-vote:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ── GALLERY ─────────────────────────────────────── */
+  .gallery-wrap { padding: 36px 40px; }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px; margin-top: 24px;
+  }
+  .gallery-item {
+    border: 1px solid var(--border); border-radius: 2px;
+    overflow: hidden; cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .gallery-item:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(26,23,20,.09); }
+  .gallery-thumb {
+    width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block;
+    background: #e8e3da;
+  }
+  .gallery-thumb-ph {
+    width: 100%; aspect-ratio: 4/3;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; background: #e8e3da; color: var(--stone);
+  }
+  .gallery-body { padding: 12px 14px; }
+  .gallery-body strong { font-size: 13px; font-weight: 500; display: block; margin-bottom: 3px; }
+  .gallery-body .sub { font-size: 12px; color: var(--stone); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gallery-body .winner-style { font-size: 11px; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; margin-top: 6px; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--stone); font-style: italic; font-family: var(--serif); font-size: 20px; }
+
+  /* ── STATS ───────────────────────────────────────── */
+  .stats-wrap { padding: 36px 40px; max-width: 720px; }
+  .stats-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 2px; }
+  .stat-card .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--stone); margin-bottom: 8px; }
+  .stat-card .val { font-family: var(--serif); font-size: 38px; font-weight: 400; line-height: 1; }
+  .stat-card .val.sm { font-size: 18px; padding-top: 10px; }
+
+  .pref-card { background: var(--card); border: 1px solid var(--border); padding: 24px; border-radius: 2px; }
+  .pref-card .pref-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--stone); margin-bottom: 18px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .bar-label { font-size: 12px; width: 110px; flex-shrink: 0; color: var(--stone); }
+  .bar-track { flex: 1; height: 5px; background: rgba(26,23,20,.08); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .9s cubic-bezier(.4,0,.2,1); }
+  .bar-num { font-size: 12px; font-family: var(--serif); font-weight: 700; width: 28px; text-align: right; flex-shrink: 0; }
+
+  .insight { margin-top: 18px; padding: 14px 18px; background: rgba(196,168,130,.08); border-radius: 2px; font-size: 12px; color: var(--stone); line-height: 1.6; }
+
+  /* ── RESPONSIVE ──────────────────────────────────── */
+  @media (max-width: 680px) {
+    nav { padding: 16px 20px; }
+    .section, .form-card, .gallery-wrap, .stats-wrap, .results-header { padding-left: 20px; padding-right: 20px; }
+    .form-card { margin: 0 20px 32px; }
+    .proposals-grid { grid-template-columns: 1fr; }
+    .stats-cards { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-ring"></div>
+  <div class="loader-title">Génération en cours…</div>
+  <div class="loader-step" id="loader-step">Analyse du brief</div>
+</div>
+
+<!-- CONFIG MODAL -->
+<div id="config-modal">
+  <div class="modal-card">
+    <button class="btn-ghost modal-close" onclick="closeConfig()">✕</button>
+    <h3>Configuration</h3>
+    <p class="sub">Entrez votre token Airtable pour activer la génération.</p>
+    <div class="form-group">
+      <label>Token Airtable</label>
+      <input type="text" id="cfg-airtable" placeholder="patXXXXXX…" oninput="saveConfig()">
+    </div>
+    <div id="cfg-status"></div>
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <button class="btn btn-primary" onclick="testConfig()">Tester la connexion</button>
+      <button class="btn btn-outline" onclick="closeConfig()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">idea<em>rchi</em></div>
+  <div class="nav-links">
+    <button onclick="nav('submit')"  id="nav-submit"  class="active">Nouveau projet</button>
+    <button onclick="nav('gallery')" id="nav-gallery">Galerie</button>
+    <button onclick="nav('stats')"   id="nav-stats">Tendances</button>
+    <button class="nav-config-btn"  onclick="openConfig()" title="Configuration API">⚙</button>
+  </div>
+</nav>
+
+<!-- ══ PAGE : SOUMETTRE ══════════════════════════════ -->
+<div class="page active" id="page-submit">
+
+  <div class="section">
+    <div class="tag">Architecture d'intérieur · IA</div>
+    <h1 style="font-size:46px;line-height:1.15;margin-bottom:14px">
+      Redessinez votre<br>espace de vie
+    </h1>
+    <p style="font-size:15px;color:var(--stone);max-width:480px;line-height:1.75">
+      Soumettez vos plans, photos et un brief. Idearchi génère trois propositions de design — traditionnelle, contemporaine, moderne — que la communauté vote pour orienter les créations futures.
+    </p>
+  </div>
+
+  <div class="form-card">
+    <div class="tag">01 — Votre projet</div>
+
+    <div id="demo-banner" class="alert alert-warn" style="display:none">
+      ⚙ Mode démo actif — configurez votre token Airtable via le bouton ⚙ pour activer la génération.
+    </div>
+
+    <div id="form-error" class="alert alert-error" style="display:none"></div>
+
+    <div class="form-group">
+      <label>Nom du projet</label>
+      <input type="text" id="f-name" placeholder="ex. Salon Montpellier, Cuisine T3…">
+    </div>
+
+    <div class="form-group">
+      <label>Brief explicatif</label>
+      <textarea id="f-brief" rows="6" placeholder="Décrivez votre espace, vos goûts, vos contraintes et ce que vous souhaitez changer. Plus le brief est précis, meilleures seront les propositions.
+
+Ex : Salon de 28m², appartement haussmannien, plafond 3m. Je veux casser le côté trop traditionnel tout en gardant le parquet en chêne. Budget déco 8 000€. J'aime le mélange de matières naturelles et de métal…"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Documents (facultatif)</label>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" multiple accept="image/*,.pdf" onchange="onFiles(this.files)">
+        <div class="drop-icon">⬆</div>
+        <p><strong>Glissez vos fichiers</strong> ou cliquez pour sélectionner</p>
+        <p style="font-size:11px;margin-top:3px;color:var(--stone)">JPG · PNG · PDF — max 10 Mo / fichier</p>
+      </div>
+      <div class="files-list" id="files-list"></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btn-submit" onclick="submitProject()">
+        Générer les 3 propositions →
+      </button>
+      <span style="font-size:12px;color:var(--stone)">Claude · DALL-E 3 · Airtable</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE : RÉSULTATS ══════════════════════════════ -->
+<div class="page" id="page-results">
+  <div class="results-header">
+    <div>
+      <div class="tag">Propositions générées</div>
+      <h2 id="r-name">—</h2>
+    </div>
+    <div class="brief-snip" id="r-brief"></div>
+  </div>
+
+  <div class="proposals-grid" id="proposals-grid"></div>
+
+  <div style="padding:22px 40px;border-top:1px solid var(--border);display:flex;gap:12px">
+    <button class="btn btn-outline" onclick="nav('submit')">← Nouveau projet</button>
+    <button class="btn btn-outline" onclick="nav('gallery')">Voir la galerie</button>
+  </div>
+</div>
+
+<!-- ══ PAGE : GALERIE ════════════════════════════════ -->
+<div class="page" id="page-gallery">
+  <div class="gallery-wrap">
+    <div class="tag">Communauté</div>
+    <h2 style="font-size:30px;margin-bottom:6px">Projets récents</h2>
+    <p style="color:var(--stone);font-size:13px">Votez pour vos designs préférés et influencez les prochaines générations.</p>
+    <div id="gallery-content"><div style="color:var(--stone);font-style:italic;padding:40px 0">Chargement…</div></div>
+  </div>
+</div>
+
+<!-- ══ PAGE : STATS ══════════════════════════════════ -->
+<div class="page" id="page-stats">
+  <div class="stats-wrap">
+    <div class="tag">Intelligence collective</div>
+    <h2 style="font-size:30px;margin-bottom:24px">Ce que la communauté aime</h2>
+
+    <div class="stats-cards">
+      <div class="stat-card"><div class="lbl">Projets</div><div class="val" id="st-projets">—</div></div>
+      <div class="stat-card"><div class="lbl">Votes totaux</div><div class="val" id="st-votes">—</div></div>
+      <div class="stat-card"><div class="lbl">Style favori</div><div class="val sm" id="st-style">—</div></div>
+    </div>
+
+    <div class="pref-card">
+      <div class="pref-title">Répartition des votes par style</div>
+      <div class="bar-row"><div class="bar-label">Traditionnel</div><div class="bar-track"><div class="bar-fill" id="b1" style="width:0"></div></div><div class="bar-num" id="bn1">0</div></div>
+      <div class="bar-row"><div class="bar-label">Contemporain</div><div class="bar-track"><div class="bar-fill" id="b2" style="width:0"></div></div><div class="bar-num" id="bn2">0</div></div>
+      <div class="bar-row"><div class="bar-label">Moderne</div><div class="bar-track"><div class="bar-fill" id="b3" style="width:0"></div></div><div class="bar-num" id="bn3">0</div></div>
+      <div class="insight" id="st-insight">Ces données sont transmises à Claude pour affiner les prochaines propositions en fonction des goûts de la communauté.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  CONFIG — IDs câblés depuis la vraie base Airtable
+// ═══════════════════════════════════════════════════════════════════════════
+const BASE_ID        = 'appj0Zvin0JBfzjnd';
+const TABLE_ID       = 'tblsTurZ4IMP4UCQx';   // Idearchi_Projets
+const AIRTABLE_URL   = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}`;
+
+// Field IDs — Idearchi_Projets
+const F = {
+  NOM:        'fldjyYWmziaroUjSV',
+  BRIEF:      'fldkm8nwDK3OTq3Hy',
+  STATUT:     'fldHpbwOcqPRFQFW1',
+  DATE:       'fld3Lx2zxrb81tvMu',
+  VISUEL1:    'fld74u8xTD7Ht1zxY',
+  VISUEL2:    'flddUsVwe6vZ72fOI',
+  VISUEL3:    'fldQpXaknrrhpJao8',
+  VOTES1:     'fldhpGrRHzx1pUB1T',
+  VOTES2:     'fldBupmkjVn7uTWZ7',
+  VOTES3:     'fldvDmgYCleiXYbv1',
+  STYLE1:     'fldIhmKambi0LDDfd',
+  STYLE2:     'fld0jFpiSBHMfW3vu',
+  STYLE3:     'fldaQO6wy1BfK8U5z',
+};
+
+function getCfg() {
+  return {
+    airtable: localStorage.getItem('idearchi_airtable') || '',
+  };
+}
+function isConfigured() {
+  // En prod Vercel, Claude + DALL-E passent par les proxies /api/*
+  // Seul le token Airtable reste côté client (lecture/écriture base)
+  const c = getCfg();
+  return c.airtable.length > 10;
+}
+function isDemoMode() { return !isConfigured(); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  NAV
+// ═══════════════════════════════════════════════════════════════════════════
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links button[id^=nav]').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const btn = document.getElementById('nav-' + page);
+  if (btn) btn.classList.add('active');
+  if (page === 'gallery') loadGallery();
+  if (page === 'stats')   loadStats();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CONFIG MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+function openConfig() {
+  const c = getCfg();
+  document.getElementById('cfg-airtable').value = c.airtable;
+  document.getElementById('cfg-status').innerHTML = '';
+  document.getElementById('config-modal').classList.add('active');
+}
+function closeConfig() {
+  document.getElementById('config-modal').classList.remove('active');
+  checkDemoBanner();
+}
+function saveConfig() {
+  localStorage.setItem('idearchi_airtable', document.getElementById('cfg-airtable').value.trim());
+}
+async function testConfig() {
+  saveConfig();
+  const c = getCfg();
+  const status = document.getElementById('cfg-status');
+  status.innerHTML = '<div class="config-status" style="color:var(--stone)">Test en cours…</div>';
+  try {
+    const res = await fetch(`${AIRTABLE_URL}?pageSize=1`, {
+      headers: { 'Authorization': `Bearer ${c.airtable}` }
+    });
+    if (!res.ok) throw new Error('Token Airtable invalide (vérifiez le token et les scopes)');
+    status.innerHTML = '<div class="config-status config-ok">✓ Airtable connecté — prêt à générer !</div>';
+  } catch(e) {
+    status.innerHTML = `<div class="config-status config-fail">✗ ${e.message}</div>`;
+  }
+}
+function checkDemoBanner() {
+  document.getElementById('demo-banner').style.display = isDemoMode() ? 'flex' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  FILES
+// ═══════════════════════════════════════════════════════════════════════════
+let uploadedFiles = [];
+
+function onFiles(files) {
+  [...files].forEach(f => { if (!uploadedFiles.find(u => u.name === f.name)) uploadedFiles.push(f); });
+  renderFiles();
+}
+function removeFile(i) { uploadedFiles.splice(i, 1); renderFiles(); }
+function renderFiles() {
+  document.getElementById('files-list').innerHTML = uploadedFiles.map((f, i) => `
+    <div class="file-chip">
+      ${f.name.length > 24 ? f.name.slice(0,22)+'…' : f.name}
+      <button onclick="removeFile(${i})">×</button>
+    </div>`).join('');
+}
+
+// Drag & drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); onFiles(e.dataTransfer.files); });
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  LOADER
+// ═══════════════════════════════════════════════════════════════════════════
+function showLoader(step) {
+  document.getElementById('loader').classList.add('active');
+  document.getElementById('loader-step').textContent = step;
+}
+function setStep(t) { document.getElementById('loader-step').textContent = t; }
+function hideLoader() { document.getElementById('loader').classList.remove('active'); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SUBMIT
+// ═══════════════════════════════════════════════════════════════════════════
+let sessionId = 'sess_' + Math.random().toString(36).slice(2,10);
+let hasVoted  = {};
+
+async function submitProject() {
+  const name  = document.getElementById('f-name').value.trim();
+  const brief = document.getElementById('f-brief').value.trim();
+  const errEl = document.getElementById('form-error');
+  errEl.style.display = 'none';
+
+  if (!name || brief.length < 30) {
+    errEl.textContent = 'Renseignez un nom de projet et un brief d\'au moins 30 caractères.';
+    errEl.style.display = 'flex'; return;
+  }
+
+  document.getElementById('btn-submit').disabled = true;
+  showLoader('Analyse du brief…');
+
+  try {
+    isDemoMode() ? await demoFlow(name, brief) : await realFlow(name, brief);
+  } catch(e) {
+    hideLoader();
+    errEl.textContent = 'Erreur : ' + e.message;
+    errEl.style.display = 'flex';
+  } finally {
+    document.getElementById('btn-submit').disabled = false;
+  }
+}
+
+// ─── DEMO FLOW ────────────────────────────────────────────────────────────
+async function demoFlow(name, brief) {
+  await sleep(900);
+  setStep('Génération des concepts…');
+  await sleep(1000);
+  setStep('Création des visuels…');
+  await sleep(800);
+
+  const concepts = [
+    { style: 'Traditionnel', titre: 'Héritage & Noblesse',
+      desc: 'Moulures en plâtre, boiseries teintées merisier, tissus damassés sur fond crème et bordeaux. Le parquet point de Hongrie guide l\'œil vers une cheminée en marbre de Carrare. Intemporel et noble.',
+      imageUrl: null, bg: 'trad', icon: '🏛' },
+    { style: 'Contemporain', titre: 'Équilibre & Matières',
+      desc: 'Le béton ciré rencontre le chêne naturel huilé. Volumes épurés, fenêtres sol-plafond, mobilier design scandinave. Luminaires en laiton brossé et lin naturel pour une chaleur moderne maîtrisée.',
+      imageUrl: null, bg: 'cont', icon: '🪑' },
+    { style: 'Moderne',      titre: 'Minimalisme Radical',
+      desc: 'Plancher en microbéton blanc pur, cloisons pivotantes laquées noir mat. Une seule pièce de caractère par zone. Éclairage LED architectural intégré, aucun luminaire apparent. Pure abstraction.',
+      imageUrl: null, bg: 'mod',  icon: '◻' },
+  ];
+
+  hideLoader();
+  renderResults(name, brief, concepts, [0,0,0], 'demo_' + Date.now());
+}
+
+// ─── REAL FLOW ────────────────────────────────────────────────────────────
+async function realFlow(name, brief) {
+  const cfg = getCfg();
+
+  setStep('Récupération des préférences communauté…');
+  const statsCtx = await fetchStatsContext();
+
+  // 2. Claude génère les concepts via proxy /api/claude
+  setStep('Claude analyse votre brief…');
+  const systemPrompt = `Tu es un architecte d'intérieur expert et créatif. 
+${statsCtx ? `Contexte : la communauté Idearchi vote actuellement ainsi → ${statsCtx}. Tiens-en compte subtilement dans tes propositions.` : ''}
+Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks.`;
+
+  const userPrompt = `Projet : "${name}"
+Brief : ${brief}
+
+Génère 3 concepts de design d'intérieur pour ce projet. Format JSON :
+{
+  "trad":  { "titre": "2-4 mots poétiques", "desc": "Description 60-80 mots, matériaux concrets, ambiance, palette", "dalle": "photorealistic interior design, traditional French style, [matériaux], warm lighting, 4K" },
+  "cont":  { "titre": "...", "desc": "...", "dalle": "photorealistic interior design, contemporary Scandinavian style, [matériaux], natural light, 4K" },
+  "mod":   { "titre": "...", "desc": "...", "dalle": "photorealistic interior design, minimalist modern style, [matériaux], architectural lighting, 4K" }
+}`;
+
+  const claudeRes = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+
+  if (!claudeRes.ok) throw new Error('Claude API : ' + claudeRes.status);
+  const claudeData = await claudeRes.json();
+  const rawText = claudeData.content?.find(b => b.type === 'text')?.text || '';
+
+  let concepts;
+  try {
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    concepts = JSON.parse(clean);
+  } catch { throw new Error('Réponse Claude non parseable'); }
+
+  // 3. DALL-E 3 via proxy /api/image — 3 images en parallèle
+  setStep('Génération des visuels DALL-E 3…');
+  const [img1, img2, img3] = await Promise.all([
+    dalle(concepts.trad.dalle),
+    dalle(concepts.cont.dalle),
+    dalle(concepts.mod.dalle),
+  ]);
+
+  // 4. Sauvegarder dans Airtable avec les vrais field IDs
+  setStep('Sauvegarde du projet…');
+  const payload = { fields: {
+    [F.NOM]:     name,
+    [F.BRIEF]:   brief,
+    [F.STATUT]:  'généré',
+    [F.DATE]:    new Date().toISOString(),
+    [F.VISUEL1]: img1 || '',
+    [F.VISUEL2]: img2 || '',
+    [F.VISUEL3]: img3 || '',
+    [F.STYLE1]:  JSON.stringify(concepts.trad),
+    [F.STYLE2]:  JSON.stringify(concepts.cont),
+    [F.STYLE3]:  JSON.stringify(concepts.mod),
+    [F.VOTES1]:  0,
+    [F.VOTES2]:  0,
+    [F.VOTES3]:  0,
+  }};
+
+  const saveRes = await fetch(AIRTABLE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.airtable}` },
+    body: JSON.stringify(payload)
+  });
+  const record = await saveRes.json();
+  if (record.error) throw new Error('Airtable : ' + record.error.message);
+
+  hideLoader();
+
+  const styleMap = [
+    { style: 'Traditionnel', ...concepts.trad, imageUrl: img1, bg: 'trad', icon: '🏛' },
+    { style: 'Contemporain', ...concepts.cont, imageUrl: img2, bg: 'cont', icon: '🪑' },
+    { style: 'Moderne',      ...concepts.mod,  imageUrl: img3, bg: 'mod',  icon: '◻' },
+  ];
+  renderResults(name, brief, styleMap, [0,0,0], record.id);
+}
+
+async function dalle(prompt) {
+  const res = await fetch('/api/image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size: '1792x1024', quality: 'standard' })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error('DALL-E : ' + data.error.message);
+  return data.data?.[0]?.url || null;
+}
+
+// ─── RENDER RESULTS ───────────────────────────────────────────────────────
+function renderResults(name, brief, styles, votes, recId) {
+  document.getElementById('r-name').textContent = name;
+  document.getElementById('r-brief').textContent = brief.slice(0,130) + (brief.length>130?'…':'');
+
+  window._currentRecord = { recId, votes: [...votes], styles };
+
+  const maxV = Math.max(...votes);
+  document.getElementById('proposals-grid').innerHTML = styles.map((s, i) => {
+    const isWinner = votes[i] === maxV && maxV > 0;
+    const voted = hasVoted[recId];
+    return `
+    <div class="proposal-card">
+      ${isWinner ? '<div class="winner-badge">★ Favori</div>' : ''}
+      <div class="proposal-img-wrap">
+        ${s.imageUrl
+          ? `<img class="proposal-img" src="${s.imageUrl}" alt="${s.titre}" loading="lazy">`
+          : `<div class="proposal-placeholder ${s.bg}">${s.icon}</div>`}
+      </div>
+      <div class="proposal-body">
+        <div class="style-tag">${s.style}</div>
+        <h3>${s.titre}</h3>
+        <p>${s.desc}</p>
+        <div class="vote-row">
+          <div class="vote-count"><strong id="vc-${i}">${votes[i]}</strong> votes</div>
+          <button class="btn-vote ${voted===i?'voted':''}"
+                  id="vb-${i}"
+                  onclick="castVote(${i},'${recId}')"
+                  ${voted!==undefined?'disabled':''}>
+            ${voted===i ? '✓ Voté' : 'Voter'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  nav('results');
+}
+
+// ─── VOTE ─────────────────────────────────────────────────────────────────
+async function castVote(idx, recId) {
+  if (hasVoted[recId] !== undefined) return;
+  hasVoted[recId] = idx;
+
+  const rec = window._currentRecord;
+  rec.votes[idx]++;
+  document.getElementById('vc-' + idx).textContent = rec.votes[idx];
+
+  for (let i = 0; i < 3; i++) {
+    const b = document.getElementById('vb-' + i);
+    if (!b) continue;
+    b.disabled = true;
+    if (i === idx) { b.textContent = '✓ Voté'; b.classList.add('voted'); }
+  }
+
+  if (!isDemoMode() && !recId.startsWith('demo_')) {
+    const cfg = getCfg();
+    const voteField = [F.VOTES1, F.VOTES2, F.VOTES3][idx];
+    await fetch(`${AIRTABLE_URL}/${recId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.airtable}` },
+      body: JSON.stringify({ fields: { [voteField]: rec.votes[idx] } })
+    }).catch(console.warn);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  GALLERY
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadGallery() {
+  const el = document.getElementById('gallery-content');
+  el.innerHTML = '<div style="color:var(--stone);font-style:italic;padding:32px 0">Chargement…</div>';
+
+  if (isDemoMode()) {
+    const demo = [
+      { name:'Salon Haussmannien', brief:'Moderniser sans trahir l\'époque',         votes:[4,12,3],  icons:['🏛','🪑','◻'], bgs:['trad','cont','mod'] },
+      { name:'Cuisine ouverte',    brief:'Unifier cuisine et séjour avec îlot central', votes:[8,5,10], icons:['🏛','🪑','◻'], bgs:['trad','cont','mod'] },
+      { name:'Suite parentale',    brief:'Créer un cocon chaleureux et fonctionnel', votes:[15,3,7],  icons:['🏛','🪑','◻'], bgs:['trad','cont','mod'] },
+      { name:'Bureau à domicile',  brief:'Espace de travail créatif dans 12m²',      votes:[2,9,11],  icons:['🏛','🪑','◻'], bgs:['trad','cont','mod'] },
+    ];
+    el.innerHTML = '<div class="gallery-grid">' + demo.map(p => {
+      const wi = p.votes.indexOf(Math.max(...p.votes));
+      const labels = ['Traditionnel','Contemporain','Moderne'];
+      return `<div class="gallery-item" onclick="alert('Démo — activez vos clés API pour voir les vrais projets')">
+        <div class="gallery-thumb-ph" style="background:${['#e8dcc8','#d8d2cc','#e0e0e0','#dce4d8'][Math.floor(Math.random()*4)]}">${p.icons[wi]}</div>
+        <div class="gallery-body">
+          <strong>${p.name}</strong>
+          <div class="sub">${p.brief}</div>
+          <div class="winner-style">★ ${labels[wi]} · ${Math.max(...p.votes)} votes</div>
+        </div></div>`;
+    }).join('') + '</div>';
+    return;
+  }
+
+  try {
+    const cfg = getCfg();
+    const fields = [F.NOM, F.BRIEF, F.STATUT, F.VISUEL1, F.VISUEL2, F.VISUEL3,
+                    F.VOTES1, F.VOTES2, F.VOTES3].map(f => `fields[]=${f}`).join('&');
+    const res = await fetch(
+      `${AIRTABLE_URL}?${fields}&sort[0][field]=${F.DATE}&sort[0][direction]=desc`,
+      { headers: { 'Authorization': `Bearer ${cfg.airtable}` } }
+    );
+    const data = await res.json();
+    const projets = (data.records || []).filter(r => {
+      const s = r.fields[F.STATUT];
+      return s && (typeof s === 'string' ? s : s.name) === 'généré';
+    });
+    if (!projets.length) { el.innerHTML = '<div class="empty-state">Aucun projet encore — soyez le premier !</div>'; return; }
+
+    el.innerHTML = '<div class="gallery-grid">' + projets.map(r => {
+      const f = r.fields;
+      const votes = [+(f[F.VOTES1]||0), +(f[F.VOTES2]||0), +(f[F.VOTES3]||0)];
+      const wi = votes.indexOf(Math.max(...votes));
+      const labels = ['Traditionnel','Contemporain','Moderne'];
+      const imgUrl = [f[F.VISUEL1], f[F.VISUEL2], f[F.VISUEL3]][wi];
+      const icons  = ['🏛','🪑','◻'];
+      const bgs    = ['trad','cont','mod'];
+      const nom    = f[F.NOM] || '—';
+      const brief  = f[F.BRIEF] || '';
+      return `<div class="gallery-item" onclick="openProject('${r.id}')">
+        ${imgUrl
+          ? `<img class="gallery-thumb" src="${imgUrl}" alt="${nom}" loading="lazy">`
+          : `<div class="gallery-thumb-ph ${bgs[wi]}">${icons[wi]}</div>`}
+        <div class="gallery-body">
+          <strong>${nom}</strong>
+          <div class="sub">${brief.slice(0,60)}…</div>
+          <div class="winner-style">★ ${labels[wi]} · ${Math.max(...votes)} vote${Math.max(...votes)!==1?'s':''}</div>
+        </div></div>`;
+    }).join('') + '</div>';
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-error">✗ Impossible de charger la galerie : ${e.message}</div>`;
+  }
+}
+
+async function openProject(recId) {
+  if (isDemoMode()) return;
+  const cfg = getCfg();
+  showLoader('Chargement du projet…');
+  try {
+    const res = await fetch(`${AIRTABLE_URL}/${recId}`, {
+      headers: { 'Authorization': `Bearer ${cfg.airtable}` }
+    });
+    const { fields: f } = await res.json();
+    const styles = ['trad','cont','mod'].map((k, i) => {
+      const styleField = [F.STYLE1, F.STYLE2, F.STYLE3][i];
+      const urlField   = [F.VISUEL1, F.VISUEL2, F.VISUEL3][i];
+      let parsed = {};
+      try { parsed = JSON.parse(f[styleField] || '{}'); } catch {}
+      return {
+        style: ['Traditionnel','Contemporain','Moderne'][i],
+        titre: parsed.titre || `Style ${i+1}`,
+        desc:  parsed.desc  || '',
+        imageUrl: f[urlField] || null,
+        bg: k, icon: ['🏛','🪑','◻'][i]
+      };
+    });
+    const votes = [+(f[F.VOTES1]||0), +(f[F.VOTES2]||0), +(f[F.VOTES3]||0)];
+    hideLoader();
+    renderResults(f[F.NOM], f[F.BRIEF], styles, votes, recId);
+  } catch(e) {
+    hideLoader();
+    alert('Erreur chargement : ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STATS
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadStats() {
+  if (isDemoMode()) {
+    const v = [28,47,35]; const tot = 110;
+    document.getElementById('st-projets').textContent = '4';
+    document.getElementById('st-votes').textContent = tot;
+    document.getElementById('st-style').textContent = 'Contemporain';
+    setTimeout(() => {
+      ['1','2','3'].forEach((n,i) => {
+        document.getElementById('b'+n).style.width = (v[i]/tot*100)+'%';
+        document.getElementById('bn'+n).textContent = v[i];
+      });
+    }, 200);
+    return;
+  }
+
+  try {
+    const cfg = getCfg();
+    const fields = `fields[]=${F.VOTES1}&fields[]=${F.VOTES2}&fields[]=${F.VOTES3}&fields[]=${F.STATUT}`;
+    const res = await fetch(`${AIRTABLE_URL}?${fields}`,
+      { headers: { 'Authorization': `Bearer ${cfg.airtable}` } }
+    );
+    const data = await res.json();
+    const records = (data.records || []).filter(r => {
+      const s = r.fields[F.STATUT];
+      return s && (typeof s === 'string' ? s : s.name) === 'généré';
+    });
+    let v = [0,0,0];
+    records.forEach(r => {
+      v[0] += +(r.fields[F.VOTES1]||0);
+      v[1] += +(r.fields[F.VOTES2]||0);
+      v[2] += +(r.fields[F.VOTES3]||0);
+    });
+    const tot = v.reduce((a,b)=>a+b,0) || 1;
+    const labels = ['Traditionnel','Contemporain','Moderne'];
+    const best = v.indexOf(Math.max(...v));
+
+    document.getElementById('st-projets').textContent = records.length;
+    document.getElementById('st-votes').textContent = v.reduce((a,b)=>a+b,0);
+    document.getElementById('st-style').textContent = v.reduce((a,b)=>a+b,0) > 0 ? labels[best] : '—';
+    setTimeout(() => {
+      ['1','2','3'].forEach((n,i) => {
+        document.getElementById('b'+n).style.width = (v[i]/tot*100)+'%';
+        document.getElementById('bn'+n).textContent = v[i];
+      });
+      if (tot > 5) {
+        const pct = Math.round(v[best]/tot*100);
+        document.getElementById('st-insight').textContent =
+          `Le style ${labels[best]} est plébiscité à ${pct}% — Claude en tient compte pour les prochaines générations.`;
+      }
+    }, 200);
+  } catch(e) {
+    console.warn('Stats error', e);
+  }
+}
+
+async function fetchStatsContext() {
+  try {
+    const cfg = getCfg();
+    const fields = `fields[]=${F.VOTES1}&fields[]=${F.VOTES2}&fields[]=${F.VOTES3}`;
+    const res = await fetch(`${AIRTABLE_URL}?${fields}&pageSize=50`,
+      { headers: { 'Authorization': `Bearer ${cfg.airtable}` } }
+    );
+    const data = await res.json();
+    let v = [0,0,0];
+    (data.records||[]).forEach(r => {
+      v[0] += +(r.fields[F.VOTES1]||0);
+      v[1] += +(r.fields[F.VOTES2]||0);
+      v[2] += +(r.fields[F.VOTES3]||0);
+    });
+    const tot = v.reduce((a,b)=>a+b,0);
+    if (tot < 3) return '';
+    const labels = ['Traditionnel','Contemporain','Moderne'];
+    return labels.map((l,i) => `${l} ${Math.round(v[i]/tot*100)}%`).join(', ');
+  } catch { return ''; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════════════════
+checkDemoBanner();
+</script>
+</body>
+</html>
