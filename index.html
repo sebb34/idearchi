@@ -750,6 +750,7 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   const btn = document.getElementById('nav-' + page);
   if (btn) btn.classList.add('active');
+  // Toujours recharger galerie et stats
   if (page === 'gallery') loadGallery();
   if (page === 'stats')   loadStats();
   if (page === 'admin' && adminUnlocked) loadPromptEditor();
@@ -1190,50 +1191,53 @@ async function loadGallery() {
       { headers: { 'Authorization': `Bearer ${cfg.airtable}` } }
     );
     const data = await res.json();
-    console.log('[Idearchi] Galerie — records bruts:', data.records?.length, data.records?.[0]);
 
-    // Accepter tous les projets (généré ou autre statut non vide)
+    // Tous les projets sauf archivés
     const projets = (data.records || []).filter(r => {
       const s = r.fields[F.STATUT];
-      if (!s) return false;
-      const nom = typeof s === 'string' ? s : (s.name || '');
+      if (!s) return true; // pas de statut = on affiche quand même
+      const nom = typeof s === 'string' ? s : (s.name || s.id || '');
       return nom !== 'archivé';
     });
-
-    console.log('[Idearchi] Galerie — projets filtrés:', projets.length);
 
     if (!projets.length) {
       el.innerHTML = '<div class="empty-state">Aucun projet encore — soyez le premier !</div>';
       return;
     }
 
+    const icons = ['🏛','🪑','◻'];
+    const bgs   = ['trad','cont','mod'];
+    const labels = ['Traditionnel','Contemporain','Moderne'];
+
     el.innerHTML = '<div class="gallery-grid">' + projets.map(r => {
       const f = r.fields;
       const votes = [+(f[F.VOTES1]||0), +(f[F.VOTES2]||0), +(f[F.VOTES3]||0)];
+      const totalVotes = votes.reduce((a,b)=>a+b,0);
       const maxV = Math.max(...votes);
       const wi = maxV > 0 ? votes.indexOf(maxV) : 0;
-      const labels = ['Traditionnel','Contemporain','Moderne'];
-      const imgUrls = [f[F.VISUEL1], f[F.VISUEL2], f[F.VISUEL3]];
-      // Chercher la première image dispo si celle du winner est vide
-      const imgUrl = imgUrls[wi] || imgUrls.find(u => u) || null;
-      const icons  = ['🏛','🪑','◻'];
-      const bgs    = ['trad','cont','mod'];
-      const nom    = f[F.NOM] || '—';
-      const brief  = f[F.BRIEF] || '';
-      const totalVotes = votes.reduce((a,b)=>a+b,0);
+      // Chercher la première URL valide parmi les 3 visuels
+      const allUrls = [f[F.VISUEL1], f[F.VISUEL2], f[F.VISUEL3]];
+      const imgUrl = allUrls[wi] || allUrls.find(u => u && u.startsWith('http')) || null;
+      const nom   = f[F.NOM] || '—';
+      const brief = f[F.BRIEF] || '';
       return `<div class="gallery-item" onclick="openProject('${r.id}')">
         ${imgUrl
-          ? `<img class="gallery-thumb" src="${imgUrl}" alt="${nom}" loading="lazy">`
-          : `<div class="gallery-thumb-ph ${bgs[wi]}">${icons[wi]}</div>`}
+          ? `<img class="gallery-thumb" src="${imgUrl}" alt="${nom}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : ''}
+        <div class="gallery-thumb-ph ${bgs[wi]}" style="${imgUrl ? 'display:none' : ''}">${icons[wi]}</div>
         <div class="gallery-body">
           <strong>${nom}</strong>
           <div class="sub">${brief.slice(0,60)}${brief.length>60?'…':''}</div>
-          <div class="winner-style">${totalVotes > 0 ? `★ ${labels[wi]} · ${totalVotes} vote${totalVotes!==1?'s':''}` : 'Pas encore de votes'}</div>
-        </div></div>`;
+          <div class="winner-style">${totalVotes > 0
+            ? `★ ${labels[wi]} · ${totalVotes} vote${totalVotes!==1?'s':''}`
+            : 'Voter pour un style'}</div>
+        </div>
+      </div>`;
     }).join('') + '</div>';
+
   } catch(e) {
     console.error('[Idearchi] Galerie erreur:', e);
-    el.innerHTML = `<div class="alert alert-error">✗ Impossible de charger la galerie : ${e.message}</div>`;
+    el.innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
   }
 }
 
