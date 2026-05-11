@@ -1184,10 +1184,8 @@ async function loadGallery() {
 
   try {
     const cfg = getCfg();
-    const fields = [F.NOM, F.BRIEF, F.STATUT, F.VISUEL1, F.VISUEL2, F.VISUEL3,
-                    F.VOTES1, F.VOTES2, F.VOTES3].map(f => `fields[]=${f}`).join('&');
     const res = await fetch(
-      `${AIRTABLE_URL}?${fields}&sort[0][field]=Date&sort[0][direction]=desc`,
+      `${AIRTABLE_URL}?sort[0][field]=Date&sort[0][direction]=desc`,
       { headers: { 'Authorization': `Bearer ${cfg.airtable}` } }
     );
     const data = await res.json();
@@ -1292,8 +1290,7 @@ async function loadStats() {
 
   try {
     const cfg = getCfg();
-    const fields = `fields[]=${F.VOTES1}&fields[]=${F.VOTES2}&fields[]=${F.VOTES3}&fields[]=${F.STATUT}`;
-    const res = await fetch(`${AIRTABLE_URL}?${fields}`,
+    const res = await fetch(`${AIRTABLE_URL}`,
       { headers: { 'Authorization': `Bearer ${cfg.airtable}` } }
     );
     const data = await res.json();
@@ -1333,8 +1330,7 @@ async function loadStats() {
 async function fetchStatsContext() {
   try {
     const cfg = getCfg();
-    const fields = `fields[]=${F.VOTES1}&fields[]=${F.VOTES2}&fields[]=${F.VOTES3}`;
-    const res = await fetch(`${AIRTABLE_URL}?${fields}&pageSize=50`,
+    const res = await fetch(`${AIRTABLE_URL}?pageSize=50`,
       { headers: { 'Authorization': `Bearer ${cfg.airtable}` } }
     );
     const data = await res.json();
