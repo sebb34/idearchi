@@ -10,13 +10,14 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --cream:        #F5F0E8;
-    --ink:          #1A1714;
-    --stone:        #8C8579;
-    --accent:       #C4A882;
-    --accent-dark:  #A08660;
-    --border:       rgba(26,23,20,0.11);
-    --card:         #FDFAF4;
+    --cream:        #FFFFFF;
+    --ink:          #0A0A0A;
+    --stone:        #6B7280;
+    --accent:       #4A7CB5;
+    --accent-dark:  #3A6399;
+    --accent-light: #EBF2FA;
+    --border:       rgba(10,10,10,0.10);
+    --card:         #F8FAFD;
     --serif:        'Playfair Display', Georgia, serif;
     --sans:         'DM Sans', system-ui, sans-serif;
   }
@@ -41,11 +42,11 @@
     padding: 18px 40px;
   }
   .logo {
-    font-family: var(--serif); font-size: 22px;
-    font-style: italic; font-weight: 400;
-    letter-spacing: -0.3px; color: var(--ink);
+    font-family: var(--serif); font-size: 24px;
+    font-style: italic; font-weight: 700;
+    letter-spacing: -0.5px; color: var(--ink);
   }
-  .logo em { color: var(--accent); font-style: italic; }
+  .logo em { color: var(--accent); font-style: italic; font-weight: 700; }
   .nav-links { display: flex; gap: 28px; align-items: center; }
   .nav-links button {
     background: none; border: none; border-bottom: 1.5px solid transparent;
@@ -74,7 +75,7 @@
   /* ── LOADER ──────────────────────────────────────── */
   #loader {
     display: none; position: fixed; inset: 0; z-index: 500;
-    background: rgba(245,240,232,.94); backdrop-filter: blur(4px);
+    background: rgba(255,255,255,.96); backdrop-filter: blur(4px);
     flex-direction: column; align-items: center; justify-content: center; gap: 18px;
   }
   #loader.active { display: flex; }
@@ -209,15 +210,15 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 40px; color: var(--stone);
   }
-  .proposal-placeholder.trad  { background: #e8dcc8; }
-  .proposal-placeholder.cont  { background: #d8d2cc; }
-  .proposal-placeholder.mod   { background: #e0e0e0; }
+  .proposal-placeholder.trad  { background: #EBF2FA; }
+  .proposal-placeholder.cont  { background: #DDEAF7; }
+  .proposal-placeholder.mod   { background: #F0F4F8; }
 
   .winner-badge {
     position: absolute; top: 12px; left: 12px;
-    background: var(--accent); color: var(--ink);
+    background: var(--accent); color: #fff;
     font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
-    font-weight: 500; padding: 4px 10px; border-radius: 2px;
+    font-weight: 600; padding: 4px 10px; border-radius: 3px;
   }
 
   .proposal-body { padding: 20px; }
@@ -235,7 +236,7 @@
     font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
     cursor: pointer; border-radius: 2px; transition: background .2s;
   }
-  .btn-vote:hover:not(:disabled) { background: var(--accent-dark); }
+  .btn-vote:hover:not(:disabled) { background: var(--accent); }
   .btn-vote.voted, .btn-vote.voted:hover { background: var(--accent); cursor: default; }
   .btn-vote:disabled { opacity: .45; cursor: not-allowed; }
 
@@ -286,10 +287,70 @@
 
   .insight { margin-top: 18px; padding: 14px 18px; background: rgba(196,168,130,.08); border-radius: 2px; font-size: 12px; color: var(--stone); line-height: 1.6; }
 
-  /* ── RESPONSIVE ──────────────────────────────────── */
+  /* ── GALLERY thumbs ─────────────────────────────────── */
+  .gallery-thumb-ph {
+    width: 100%; aspect-ratio: 4/3;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; background: var(--accent-light); color: var(--accent);
+  }
+
+  /* ── ADMIN ───────────────────────────────────────── */
+  .admin-wrap { padding: 36px 40px; max-width: 860px; }
+  .admin-section { margin-bottom: 36px; }
+  .admin-section-title {
+    font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--stone); font-weight: 500; margin-bottom: 16px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .prompt-block {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; overflow: hidden; margin-bottom: 12px;
+  }
+  .prompt-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: var(--accent-light);
+    border-bottom: 1px solid var(--border);
+  }
+  .prompt-header .prompt-label {
+    font-size: 12px; font-weight: 600; color: var(--accent);
+    letter-spacing: .05em; text-transform: uppercase;
+  }
+  .prompt-header .prompt-type {
+    font-size: 11px; color: var(--stone);
+    background: white; border: 1px solid var(--border);
+    border-radius: 3px; padding: 2px 8px;
+  }
+  .prompt-block textarea {
+    width: 100%; background: white; border: none;
+    border-radius: 0; padding: 14px 16px;
+    font-family: 'Courier New', monospace; font-size: 12.5px;
+    color: var(--ink); resize: vertical; min-height: 90px;
+    outline: none; line-height: 1.6;
+  }
+  .prompt-block textarea:focus { background: #FAFCFF; }
+  .admin-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+  .admin-login {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 80px 40px; text-align: center;
+  }
+  .admin-login h2 { font-size: 26px; margin-bottom: 8px; }
+  .admin-login p { color: var(--stone); font-size: 14px; margin-bottom: 28px; }
+  .admin-login input {
+    width: 260px; text-align: center; margin-bottom: 12px;
+    letter-spacing: .1em; font-size: 16px;
+  }
+  .badge-saved {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(40,130,80,.08); color: #286050;
+    border: 1px solid rgba(40,130,80,.2); border-radius: 3px;
+    font-size: 12px; padding: 6px 14px; opacity: 0;
+    transition: opacity .3s;
+  }
+  .badge-saved.visible { opacity: 1; }
+
   @media (max-width: 680px) {
     nav { padding: 16px 20px; }
-    .section, .form-card, .gallery-wrap, .stats-wrap, .results-header { padding-left: 20px; padding-right: 20px; }
+    .section, .form-card, .gallery-wrap, .stats-wrap, .results-header, .admin-wrap { padding-left: 20px; padding-right: 20px; }
     .form-card { margin: 0 20px 32px; }
     .proposals-grid { grid-template-columns: 1fr; }
     .stats-cards { grid-template-columns: 1fr 1fr; }
@@ -325,11 +386,12 @@
 
 <!-- NAV -->
 <nav>
-  <div class="logo">idea<em>rchi</em></div>
+  <div class="logo"><em>ide</em>archi</div>
   <div class="nav-links">
     <button onclick="nav('submit')"  id="nav-submit"  class="active">Nouveau projet</button>
     <button onclick="nav('gallery')" id="nav-gallery">Galerie</button>
     <button onclick="nav('stats')"   id="nav-stats">Tendances</button>
+    <button onclick="nav('admin')"   id="nav-admin">Admin</button>
     <button class="nav-config-btn"  onclick="openConfig()" title="Configuration API">⚙</button>
   </div>
 </nav>
@@ -438,6 +500,120 @@ Ex : Salon de 28m², appartement haussmannien, plafond 3m. Je veux casser le cô
   </div>
 </div>
 
+<!-- ══ PAGE : ADMIN ══════════════════════════════════ -->
+<div class="page" id="page-admin">
+
+  <!-- LOGIN -->
+  <div id="admin-login" class="admin-login">
+    <div class="tag">Accès restreint</div>
+    <h2>Administration</h2>
+    <p>Entrez le mot de passe admin pour accéder aux prompts.</p>
+    <input type="password" id="admin-pwd" placeholder="••••••••"
+           onkeydown="if(event.key==='Enter') adminLogin()">
+    <button class="btn btn-primary" onclick="adminLogin()" style="margin-top:4px">Accéder →</button>
+    <div id="admin-login-error" class="alert alert-error" style="display:none;margin-top:16px;max-width:300px"></div>
+  </div>
+
+  <!-- DASHBOARD (masqué jusqu'au login) -->
+  <div id="admin-dashboard" style="display:none">
+    <div class="admin-wrap">
+      <div class="tag">Administration</div>
+      <h2 style="font-size:28px;margin-bottom:6px">Éditeur de prompts</h2>
+      <p style="color:var(--stone);font-size:13px;margin-bottom:32px">
+        Modifiez les prompts envoyés à Claude et DALL-E / gpt-image-1. Les changements sont sauvegardés localement et pris en compte immédiatement.
+      </p>
+
+      <!-- PROMPT SYSTÈME CLAUDE -->
+      <div class="admin-section">
+        <div class="admin-section-title">Prompt système — Claude (analyse du brief)</div>
+        <div class="prompt-block">
+          <div class="prompt-header">
+            <span class="prompt-label">System prompt</span>
+            <span class="prompt-type">Claude claude-sonnet-4-20250514</span>
+          </div>
+          <textarea id="p-system" rows="5"></textarea>
+        </div>
+      </div>
+
+      <!-- PROMPT UTILISATEUR CLAUDE -->
+      <div class="admin-section">
+        <div class="admin-section-title">Prompt utilisateur — Claude (génération des 3 concepts)</div>
+        <div class="prompt-block">
+          <div class="prompt-header">
+            <span class="prompt-label">User prompt (template)</span>
+            <span class="prompt-type">Variables : {name} {brief} {statsCtx}</span>
+          </div>
+          <textarea id="p-user" rows="10"></textarea>
+        </div>
+        <p class="hint">Les variables <code>{name}</code>, <code>{brief}</code> et <code>{statsCtx}</code> sont remplacées automatiquement à chaque génération.</p>
+      </div>
+
+      <!-- PROMPTS IMAGE -->
+      <div class="admin-section">
+        <div class="admin-section-title">Prompts image — sans photos de référence (DALL-E 3)</div>
+        <div class="prompt-block">
+          <div class="prompt-header">
+            <span class="prompt-label">🏛 Traditionnel</span>
+            <span class="prompt-type">DALL-E 3 · 1792×1024</span>
+          </div>
+          <textarea id="p-dalle-trad" rows="3"></textarea>
+        </div>
+        <div class="prompt-block">
+          <div class="prompt-header">
+            <span class="prompt-label">🪑 Contemporain</span>
+            <span class="prompt-type">DALL-E 3 · 1792×1024</span>
+          </div>
+          <textarea id="p-dalle-cont" rows="3"></textarea>
+        </div>
+        <div class="prompt-block">
+          <div class="prompt-header">
+            <span class="prompt-label">◻ Moderne</span>
+            <span class="prompt-type">DALL-E 3 · 1792×1024</span>
+          </div>
+          <textarea id="p-dalle-mod" rows="3"></textarea>
+        </div>
+      </div>
+
+      <!-- PROMPTS IMAGE AVEC RÉFÉRENCE -->
+      <div class="admin-section">
+        <div class="admin-section-title">Prompts image — avec photos de référence (gpt-image-1)</div>
+        <div class="prompt-block">
+          <div class="prompt-header">
+            <span class="prompt-label">🏛 Traditionnel</span>
+            <span class="prompt-type">gpt-image-1 · 1536×1024</span>
+          </div>
+          <textarea id="p-edit-trad" rows="4"></textarea>
+        </div>
+        <div class="prompt-block">
+          <div class="prompt-header">
+            <span class="prompt-label">🪑 Contemporain</span>
+            <span class="prompt-type">gpt-image-1 · 1536×1024</span>
+          </div>
+          <textarea id="p-edit-cont" rows="4"></textarea>
+        </div>
+        <div class="prompt-block">
+          <div class="prompt-header">
+            <span class="prompt-label">◻ Moderne</span>
+            <span class="prompt-type">gpt-image-1 · 1536×1024</span>
+          </div>
+          <textarea id="p-edit-mod" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="admin-actions">
+        <button class="btn btn-primary" onclick="savePrompts()">💾 Sauvegarder les prompts</button>
+        <button class="btn btn-outline" onclick="resetPrompts()">↺ Remettre les défauts</button>
+        <span class="badge-saved" id="badge-saved">✓ Sauvegardé</span>
+      </div>
+
+      <div style="margin-top:32px;padding:16px 20px;background:var(--accent-light);border-radius:4px;font-size:12px;color:var(--stone);line-height:1.7">
+        💡 <strong style="color:var(--ink)">Comment ça marche :</strong> les prompts sont stockés dans le localStorage de votre navigateur.
+        Pour les déployer sur tous les utilisateurs, copiez-les dans le code source directement (variables <code>DEFAULT_PROMPTS</code> dans le script).
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 //  CONFIG — IDs câblés depuis la vraie base Airtable
@@ -463,7 +639,94 @@ const F = {
   STYLE3:     'fldaQO6wy1BfK8U5z',
 };
 
-function getCfg() {
+// ═══════════════════════════════════════════════════════════════════════════
+//  PROMPTS PAR DÉFAUT — modifiables via la page Admin
+// ═══════════════════════════════════════════════════════════════════════════
+const DEFAULT_PROMPTS = {
+  system: `Tu es un architecte d'intérieur expert et créatif. Quand l'utilisateur fournit des photos de son espace actuel, examine-les attentivement : architecture, ouvertures, volumes, mobilier en place, lumière naturelle, contraintes structurelles. Tes propositions doivent rester FIDÈLES à la géométrie et à l'agencement de la pièce ; tu modifies seulement le style, les matériaux, la palette, le mobilier et la décoration.
+Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks.`,
+
+  user: `Projet : "{name}"
+Brief : {brief}
+{statsCtx}
+
+Génère 3 concepts de design d'intérieur. Format JSON :
+{
+  "trad":  { "titre": "2-4 mots poétiques", "desc": "Description 60-80 mots en français, matériaux concrets, ambiance, palette", "dalle": "[prompt image traditionnel]" },
+  "cont":  { "titre": "...", "desc": "...", "dalle": "[prompt image contemporain]" },
+  "mod":   { "titre": "...", "desc": "...", "dalle": "[prompt image moderne]" }
+}`,
+
+  dalleTrad: `photorealistic interior design photo, traditional French Haussmann style, ornate plaster moldings, herringbone oak parquet, Carrara marble fireplace, damask fabrics, warm ivory and bordeaux palette, brass fixtures, warm soft lighting, editorial photography, 4K`,
+  dalleCont: `photorealistic interior design photo, contemporary Scandinavian style, light oiled oak, linen textiles, soft white walls, clean lines, brushed brass pendants, natural daylight, calm warm palette, design furniture, editorial photography, 4K`,
+  dalleMod:  `photorealistic interior design photo, radical minimalist style, white micro-concrete floor, matte black pivot walls, concealed LED architectural lighting, single statement furniture piece, restricted monochrome palette, dramatic shadows, editorial photography, 4K`,
+
+  editTrad: `Modify this room photo into a traditional French interior style. Preserve exactly the architecture: walls, windows, ceiling height, spatial layout and camera angle. Replace: add ornate plaster moldings, install herringbone oak parquet, add a marble fireplace, use damask or velvet upholstery in ivory/bordeaux/gold, add brass fixtures and warm ambient lighting. Keep proportions and room geometry identical. Photorealistic, high quality.`,
+  editCont: `Modify this room photo into a contemporary Scandinavian interior style. Preserve exactly the architecture: walls, windows, ceiling height, spatial layout and camera angle. Replace: light oiled oak flooring, linen and cotton textiles, soft white and warm grey walls, clean-lined furniture, brushed brass pendant lights, abundant natural light. Keep proportions and room geometry identical. Photorealistic, high quality.`,
+  editMod:  `Modify this room photo into a radical minimalist modern interior style. Preserve exactly the architecture: walls, windows, ceiling height, spatial layout and camera angle. Replace: white micro-concrete floors, matte black or white lacquered surfaces, concealed LED lighting, one single statement furniture piece per zone, restricted monochrome palette (white/black/grey). Keep proportions and room geometry identical. Photorealistic, high quality.`,
+};
+
+const ADMIN_PASSWORD = 'idearchi2024'; // ← À changer avant déploiement
+
+// ─── Admin login ──────────────────────────────────────────────────────────
+let adminUnlocked = false;
+
+function adminLogin() {
+  const pwd = document.getElementById('admin-pwd').value;
+  const err = document.getElementById('admin-login-error');
+  if (pwd === ADMIN_PASSWORD) {
+    adminUnlocked = true;
+    document.getElementById('admin-login').style.display = 'none';
+    document.getElementById('admin-dashboard').style.display = 'block';
+    loadPromptEditor();
+  } else {
+    err.textContent = 'Mot de passe incorrect.';
+    err.style.display = 'flex';
+  }
+}
+
+function loadPromptEditor() {
+  const p = getPrompts();
+  document.getElementById('p-system').value    = p.system;
+  document.getElementById('p-user').value      = p.user;
+  document.getElementById('p-dalle-trad').value = p.dalleTrad;
+  document.getElementById('p-dalle-cont').value = p.dalleCont;
+  document.getElementById('p-dalle-mod').value  = p.dalleMod;
+  document.getElementById('p-edit-trad').value  = p.editTrad;
+  document.getElementById('p-edit-cont').value  = p.editCont;
+  document.getElementById('p-edit-mod').value   = p.editMod;
+}
+
+function savePrompts() {
+  const p = {
+    system:    document.getElementById('p-system').value,
+    user:      document.getElementById('p-user').value,
+    dalleTrad: document.getElementById('p-dalle-trad').value,
+    dalleCont: document.getElementById('p-dalle-cont').value,
+    dalleMod:  document.getElementById('p-dalle-mod').value,
+    editTrad:  document.getElementById('p-edit-trad').value,
+    editCont:  document.getElementById('p-edit-cont').value,
+    editMod:   document.getElementById('p-edit-mod').value,
+  };
+  localStorage.setItem('idearchi_prompts', JSON.stringify(p));
+  const badge = document.getElementById('badge-saved');
+  badge.classList.add('visible');
+  setTimeout(() => badge.classList.remove('visible'), 2500);
+}
+
+function resetPrompts() {
+  if (!confirm('Remettre tous les prompts par défaut ?')) return;
+  localStorage.removeItem('idearchi_prompts');
+  loadPromptEditor();
+}
+
+function getPrompts() {
+  try {
+    const saved = localStorage.getItem('idearchi_prompts');
+    if (saved) return { ...DEFAULT_PROMPTS, ...JSON.parse(saved) };
+  } catch {}
+  return { ...DEFAULT_PROMPTS };
+}
   return {
     airtable: localStorage.getItem('idearchi_airtable') || '',
   };
@@ -487,6 +750,7 @@ function nav(page) {
   if (btn) btn.classList.add('active');
   if (page === 'gallery') loadGallery();
   if (page === 'stats')   loadStats();
+  if (page === 'admin' && adminUnlocked) loadPromptEditor();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -685,29 +949,23 @@ async function realFlow(name, brief) {
   // 2. Claude génère les concepts (avec vision si images uploadées)
   setStep(hasImages ? 'Claude analyse vos photos…' : 'Claude analyse votre brief…');
 
-  const systemPrompt = `Tu es un architecte d'intérieur expert et créatif.${hasImages ? ' L\'utilisateur a fourni des photos de son espace actuel. Examine-les attentivement : architecture, ouvertures, volumes, mobilier en place, lumière naturelle, contraintes structurelles. Tes propositions doivent rester FIDÈLES à la géométrie et à l\'agencement de la pièce ; tu modifies seulement le style, les matériaux, la palette, le mobilier et la décoration.' : ''}
-${statsCtx ? `Contexte : la communauté Idearchi vote actuellement ainsi → ${statsCtx}. Tiens-en compte subtilement dans tes propositions.` : ''}
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks.`;
+  const p = getPrompts();
 
-  const editGuidance = hasImages
-    ? 'Instructions précises pour modifier la photo fournie en style traditionnel français : préserver l\'architecture (murs, ouvertures, volumes, fenêtres) et le cadrage ; remplacer mobilier, matériaux, palette ; détailler les changements visibles. Anglais concis < 400 mots.'
-    : 'photorealistic interior design, traditional French style, [matériaux concrets], warm lighting, 4K';
-  const editGuidance2 = hasImages
-    ? 'Instructions précises pour modifier la photo en style contemporain scandinave : préserver architecture/cadrage ; matériaux clairs (bois clair, lin, blanc cassé) ; lignes épurées. Anglais concis < 400 mots.'
-    : 'photorealistic interior design, contemporary Scandinavian style, [matériaux], natural light, 4K';
-  const editGuidance3 = hasImages
-    ? 'Instructions précises pour modifier la photo en style minimaliste moderne : préserver architecture/cadrage ; lignes nettes, matériaux nobles, palette restreinte. Anglais concis < 400 mots.'
-    : 'photorealistic interior design, minimalist modern style, [matériaux], architectural lighting, 4K';
+  const systemPrompt = p.system + (hasImages
+    ? ' L\'utilisateur a fourni des photos de son espace actuel. Examine-les attentivement.'
+    : '') + (statsCtx ? `\nContexte communauté : ${statsCtx}. Tiens-en compte subtilement.` : '');
 
-  const userPrompt = `Projet : "${name}"
-Brief : ${brief}
+  const editGuidance  = hasImages ? p.editTrad : p.dalleTrad;
+  const editGuidance2 = hasImages ? p.editCont : p.dalleCont;
+  const editGuidance3 = hasImages ? p.editMod  : p.dalleMod;
 
-Génère 3 concepts de design d'intérieur. Format JSON :
-{
-  "trad":  { "titre": "2-4 mots poétiques", "desc": "Description 60-80 mots en français, matériaux concrets, ambiance, palette", "dalle": "${editGuidance}" },
-  "cont":  { "titre": "...", "desc": "...", "dalle": "${editGuidance2}" },
-  "mod":   { "titre": "...", "desc": "...", "dalle": "${editGuidance3}" }
-}`;
+  const userPrompt = p.user
+    .replace('{name}', name)
+    .replace('{brief}', brief)
+    .replace('{statsCtx}', statsCtx ? `Contexte votes : ${statsCtx}` : '')
+    .replace('[prompt image traditionnel]', editGuidance)
+    .replace('[prompt image contemporain]', editGuidance2)
+    .replace('[prompt image moderne]', editGuidance3);
 
   const userContent = hasImages
     ? [
