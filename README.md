@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/27580530/README.md)
 # Idearchi
 
 Design d'intérieur par IA — soumet un brief, reçois 3 propositions visuelles, vote pour ton préférée.
