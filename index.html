@@ -388,10 +388,10 @@
 <nav>
   <div class="logo"><em>ide</em>archi</div>
   <div class="nav-links">
-    <button onclick="nav('submit')"  id="nav-submit"  class="active">Nouveau projet</button>
-    <button onclick="nav('gallery')" id="nav-gallery">Galerie</button>
-    <button onclick="nav('stats')"   id="nav-stats">Tendances</button>
-    <button onclick="nav('admin')"   id="nav-admin">Admin</button>
+    <button onclick="goTo('submit')"  id="nav-submit"  class="active">Nouveau projet</button>
+    <button onclick="goTo('gallery')" id="nav-gallery">Galerie</button>
+    <button onclick="goTo('stats')"   id="nav-stats">Tendances</button>
+    <button onclick="goTo('admin')"   id="nav-admin">Admin</button>
     <button class="nav-config-btn"  onclick="openConfig()" title="Configuration API">⚙</button>
   </div>
 </nav>
@@ -463,8 +463,8 @@ Ex : Salon de 28m², appartement haussmannien, plafond 3m. Je veux casser le cô
   <div class="proposals-grid" id="proposals-grid"></div>
 
   <div style="padding:22px 40px;border-top:1px solid var(--border);display:flex;gap:12px">
-    <button class="btn btn-outline" onclick="nav('submit')">← Nouveau projet</button>
-    <button class="btn btn-outline" onclick="nav('gallery')">Voir la galerie</button>
+    <button class="btn btn-outline" onclick="goTo('submit')">← Nouveau projet</button>
+    <button class="btn btn-outline" onclick="goTo('gallery')">Voir la galerie</button>
   </div>
 </div>
 
@@ -727,6 +727,8 @@ function getPrompts() {
   } catch {}
   return { ...DEFAULT_PROMPTS };
 }
+
+function getCfg() {
   return {
     airtable: localStorage.getItem('idearchi_airtable') || '',
   };
@@ -742,7 +744,7 @@ function isDemoMode() { return !isConfigured(); }
 // ═══════════════════════════════════════════════════════════════════════════
 //  NAV
 // ═══════════════════════════════════════════════════════════════════════════
-function nav(page) {
+function goTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-links button[id^=nav]').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
@@ -898,14 +900,23 @@ async function submitProject() {
     errEl.style.display = 'flex'; return;
   }
 
+  console.log('[Idearchi] submitProject — isDemoMode:', isDemoMode(), '— token:', getCfg().airtable ? 'présent' : 'absent');
+
   document.getElementById('btn-submit').disabled = true;
   showLoader('Analyse du brief…');
 
   try {
-    isDemoMode() ? await demoFlow(name, brief) : await realFlow(name, brief);
+    if (isDemoMode()) {
+      console.log('[Idearchi] Mode démo actif — pas de génération réelle');
+      await demoFlow(name, brief);
+    } else {
+      console.log('[Idearchi] Mode réel — lancement realFlow');
+      await realFlow(name, brief);
+    }
   } catch(e) {
+    console.error('[Idearchi] Erreur:', e);
     hideLoader();
-    errEl.textContent = 'Erreur : ' + e.message;
+    errEl.textContent = 'Erreur : ' + (e.message || String(e));
     errEl.style.display = 'flex';
   } finally {
     document.getElementById('btn-submit').disabled = false;
@@ -939,14 +950,16 @@ async function demoFlow(name, brief) {
 // ─── REAL FLOW ────────────────────────────────────────────────────────────
 async function realFlow(name, brief) {
   const cfg = getCfg();
+  console.log('[Idearchi] realFlow démarré');
 
   setStep('Récupération des préférences communauté…');
   const statsCtx = await fetchStatsContext();
+  console.log('[Idearchi] statsCtx:', statsCtx || '(vide)');
 
   const refImages = uploadedFiles.filter(f => f.isImage && f.b64);
   const hasImages = refImages.length > 0;
+  console.log('[Idearchi] hasImages:', hasImages, '— nb images:', refImages.length);
 
-  // 2. Claude génère les concepts (avec vision si images uploadées)
   setStep(hasImages ? 'Claude analyse vos photos…' : 'Claude analyse votre brief…');
 
   const p = getPrompts();
@@ -988,24 +1001,34 @@ async function realFlow(name, brief) {
     })
   });
 
-  if (!claudeRes.ok) throw new Error('Claude API : ' + claudeRes.status);
+  console.log('[Idearchi] Claude response status:', claudeRes.status);
+  if (!claudeRes.ok) {
+    const errBody = await claudeRes.text();
+    console.error('[Idearchi] Claude error body:', errBody);
+    throw new Error('Claude API : ' + claudeRes.status + ' — ' + errBody.slice(0, 200));
+  }
   const claudeData = await claudeRes.json();
+  console.log('[Idearchi] Claude data:', claudeData);
   const rawText = claudeData.content?.find(b => b.type === 'text')?.text || '';
+  console.log('[Idearchi] rawText:', rawText.slice(0, 300));
 
   let concepts;
   try {
     const clean = rawText.replace(/```json|```/g, '').trim();
     concepts = JSON.parse(clean);
-  } catch { throw new Error('Réponse Claude non parseable'); }
+    console.log('[Idearchi] concepts OK:', Object.keys(concepts));
+  } catch(e) { throw new Error('Réponse Claude non parseable : ' + rawText.slice(0,100)); }
 
-  // 3. Génération images : gpt-image-1 si refs, sinon DALL-E 3
+  // 3. Génération images
   setStep(hasImages ? 'Modification des images (gpt-image-1)…' : 'Génération des visuels DALL-E 3…');
+  console.log('[Idearchi] Génération images…');
   const refB64s = hasImages ? refImages.map(i => i.b64) : null;
   const [img1, img2, img3] = await Promise.all([
     generateImage(concepts.trad.dalle, refB64s),
     generateImage(concepts.cont.dalle, refB64s),
     generateImage(concepts.mod.dalle, refB64s),
   ]);
+  console.log('[Idearchi] Images générées — img1:', img1?.slice(0,60), 'img2:', img2?.slice(0,60));
 
   // 4. Sauvegarder dans Airtable (skip visuels data URL trop longs)
   setStep('Sauvegarde du projet…');
@@ -1100,7 +1123,7 @@ function renderResults(name, brief, styles, votes, recId) {
     </div>`;
   }).join('');
 
-  nav('results');
+  goTo('results');
 }
 
 // ─── VOTE ─────────────────────────────────────────────────────────────────
