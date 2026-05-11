@@ -1186,37 +1186,53 @@ async function loadGallery() {
     const fields = [F.NOM, F.BRIEF, F.STATUT, F.VISUEL1, F.VISUEL2, F.VISUEL3,
                     F.VOTES1, F.VOTES2, F.VOTES3].map(f => `fields[]=${f}`).join('&');
     const res = await fetch(
-      `${AIRTABLE_URL}?${fields}&sort[0][field]=${F.DATE}&sort[0][direction]=desc`,
+      `${AIRTABLE_URL}?${fields}&sort[0][field]=Date&sort[0][direction]=desc`,
       { headers: { 'Authorization': `Bearer ${cfg.airtable}` } }
     );
     const data = await res.json();
+    console.log('[Idearchi] Galerie — records bruts:', data.records?.length, data.records?.[0]);
+
+    // Accepter tous les projets (généré ou autre statut non vide)
     const projets = (data.records || []).filter(r => {
       const s = r.fields[F.STATUT];
-      return s && (typeof s === 'string' ? s : s.name) === 'généré';
+      if (!s) return false;
+      const nom = typeof s === 'string' ? s : (s.name || '');
+      return nom !== 'archivé';
     });
-    if (!projets.length) { el.innerHTML = '<div class="empty-state">Aucun projet encore — soyez le premier !</div>'; return; }
+
+    console.log('[Idearchi] Galerie — projets filtrés:', projets.length);
+
+    if (!projets.length) {
+      el.innerHTML = '<div class="empty-state">Aucun projet encore — soyez le premier !</div>';
+      return;
+    }
 
     el.innerHTML = '<div class="gallery-grid">' + projets.map(r => {
       const f = r.fields;
       const votes = [+(f[F.VOTES1]||0), +(f[F.VOTES2]||0), +(f[F.VOTES3]||0)];
-      const wi = votes.indexOf(Math.max(...votes));
+      const maxV = Math.max(...votes);
+      const wi = maxV > 0 ? votes.indexOf(maxV) : 0;
       const labels = ['Traditionnel','Contemporain','Moderne'];
-      const imgUrl = [f[F.VISUEL1], f[F.VISUEL2], f[F.VISUEL3]][wi];
+      const imgUrls = [f[F.VISUEL1], f[F.VISUEL2], f[F.VISUEL3]];
+      // Chercher la première image dispo si celle du winner est vide
+      const imgUrl = imgUrls[wi] || imgUrls.find(u => u) || null;
       const icons  = ['🏛','🪑','◻'];
       const bgs    = ['trad','cont','mod'];
       const nom    = f[F.NOM] || '—';
       const brief  = f[F.BRIEF] || '';
+      const totalVotes = votes.reduce((a,b)=>a+b,0);
       return `<div class="gallery-item" onclick="openProject('${r.id}')">
         ${imgUrl
           ? `<img class="gallery-thumb" src="${imgUrl}" alt="${nom}" loading="lazy">`
           : `<div class="gallery-thumb-ph ${bgs[wi]}">${icons[wi]}</div>`}
         <div class="gallery-body">
           <strong>${nom}</strong>
-          <div class="sub">${brief.slice(0,60)}…</div>
-          <div class="winner-style">★ ${labels[wi]} · ${Math.max(...votes)} vote${Math.max(...votes)!==1?'s':''}</div>
+          <div class="sub">${brief.slice(0,60)}${brief.length>60?'…':''}</div>
+          <div class="winner-style">${totalVotes > 0 ? `★ ${labels[wi]} · ${totalVotes} vote${totalVotes!==1?'s':''}` : 'Pas encore de votes'}</div>
         </div></div>`;
     }).join('') + '</div>';
   } catch(e) {
+    console.error('[Idearchi] Galerie erreur:', e);
     el.innerHTML = `<div class="alert alert-error">✗ Impossible de charger la galerie : ${e.message}</div>`;
   }
 }
